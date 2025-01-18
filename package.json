@@ -1,0 +1,6 @@
+
+{
+  "scripts": {
+    "start": "concurrently \"npm start --prefix frontend\" \"npm start --prefix backend\""
+  }
+}
