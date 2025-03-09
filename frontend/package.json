@@ -2,6 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "proxy": "https://api.scripture.api.bible/v1",
   "dependencies": {
     "bible-api": "^1.0.6",
     "cra-template": "1.2.0",

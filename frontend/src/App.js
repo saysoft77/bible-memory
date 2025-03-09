@@ -5,6 +5,10 @@ import RepetitionSettings from './RepetitionSettings';
 import MemorizationProgress from './MemorizationProgress';
 
 function App() {
+  const [selectedVerse, setSelectedVerse] = useState('');
+  const [repetitions, setRepetitions] = useState(5);
+  const [accuracyThreshold, setAccuracyThreshold] = useState(80);
+
   return (
     <Router>
       <div>
@@ -27,9 +31,9 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/verse-selection" element={<VerseSelection />} />
-          <Route path="/repetition-settings" element={<RepetitionSettings />} />
-          <Route path="/memorization-progress" element={<MemorizationProgress />} />
+          <Route path="/verse-selection" element={<VerseSelection setSelectedVerse={setSelectedVerse} />} />
+          <Route path="/repetition-settings" element={<RepetitionSettings repetitions={repetitions} setRepetitions={setRepetitions} accuracyThreshold={accuracyThreshold} setAccuracyThreshold={setAccuracyThreshold} />} />
+          <Route path="/memorization-progress" element={<MemorizationProgress verse={selectedVerse} repetitions={repetitions} accuracyThreshold={accuracyThreshold}/>} />
         </Routes>
       </div>
     </Router>
