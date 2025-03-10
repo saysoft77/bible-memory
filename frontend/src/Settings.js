@@ -1,6 +1,6 @@
 import React from 'react';
 
-function RepetitionSettings({ repetitions, setRepetitions, accuracyThreshold, setAccuracyThreshold }) {
+function Settings({ repetitions, setRepetitions, accuracyThreshold, setAccuracyThreshold }) { // Changed component name
   return (
     <div>
       <label>Repetitions:</label> <input type="number" value={repetitions} onChange={e => setRepetitions(parseInt(e.target.value, 10))} /><br />
@@ -9,4 +9,4 @@ function RepetitionSettings({ repetitions, setRepetitions, accuracyThreshold, se
   );
 }
 
-export default RepetitionSettings;
+export default Settings; // Changed export name

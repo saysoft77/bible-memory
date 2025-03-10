@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Link, Routes } from 'react-router-dom';
 import VerseSelection from './VerseSelection';
-import RepetitionSettings from './RepetitionSettings';
-import MemorizationProgress from './MemorizationProgress';
+import Settings from './Settings'; // Changed import name
+import MemorizeVerse from './MemorizeVerse';
 
 function App() {
   const [selectedVerse, setSelectedVerse] = useState('');
@@ -21,10 +21,10 @@ function App() {
               <Link to="/verse-selection">Verse Selection</Link>
             </li>
             <li>
-              <Link to="/repetition-settings">Repetition Settings</Link>
+              <Link to="/memorize-verse">Memorize Verse</Link>
             </li>
             <li>
-              <Link to="/memorization-progress">Memorization Progress</Link>
+              <Link to="/settings">Settings</Link> {/* Changed link text and position*/}
             </li>
           </ul>
         </nav>
@@ -32,8 +32,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/verse-selection" element={<VerseSelection setSelectedVerse={setSelectedVerse} />} />
-          <Route path="/repetition-settings" element={<RepetitionSettings repetitions={repetitions} setRepetitions={setRepetitions} accuracyThreshold={accuracyThreshold} setAccuracyThreshold={setAccuracyThreshold} />} />
-          <Route path="/memorization-progress" element={<MemorizationProgress verse={selectedVerse} repetitions={repetitions} accuracyThreshold={accuracyThreshold}/>} />
+          <Route path="/memorize-verse" element={<MemorizeVerse verse={selectedVerse} repetitions={repetitions} accuracyThreshold={accuracyThreshold}/>} />
+          <Route path="/settings" element={<Settings repetitions={repetitions} setRepetitions={setRepetitions} accuracyThreshold={accuracyThreshold} setAccuracyThreshold={setAccuracyThreshold} />} /> {/* Changed component name and path */}
         </Routes>
       </div>
     </Router>

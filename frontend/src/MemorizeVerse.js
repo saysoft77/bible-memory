@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function MemorizationProgress({ verse, repetitions, accuracyThreshold }) {
+function MemorizeVerse({ verse, repetitions, accuracyThreshold }) { // Changed component name
   const [currentRepetition, setCurrentRepetition] = useState(0);
   const [accuracy, setAccuracy] = useState(0); // Placeholder
 
@@ -20,4 +20,4 @@ function MemorizationProgress({ verse, repetitions, accuracyThreshold }) {
   );
 }
 
-export default MemorizationProgress;
+export default MemorizeVerse; // Changed export name
