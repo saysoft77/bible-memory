@@ -1,208 +1,254 @@
 import React, { useState, useEffect } from 'react';
-import { getBibleVersions, getBooks, getChapters, getVerses, getSelectedVerse } from './bibleApi'; // Import needed functions
+import { getBibleVersions, getBooks, getChapters, getVerses, getSelectedVerse } from './bibleApi';
 
 function VerseSelection({ setSelectedVerse }) {
-  const [bibleVersions, setBibleVersions] = useState([]);
-  const [selectedVersion, setSelectedVersion] = useState(''); // Default to empty
-  const [books, setBooks] = useState([]);
-  const [selectedBook, setSelectedBook] = useState('');
-  const [chapters, setChapters] = useState([]);
-  const [selectedChapter, setSelectedChapter] = useState(''); // Store chapter ID
-  const [verses, setVerses] = useState([]);
-  const [selectedVerse, setSelectedVerseLocal] = useState(''); //local state for verse
-  const [error, setError] = useState(null);
-  const [verseContent, setVerseContent] = useState('');
-  const [verseReference, setVerseReference] = useState('');
+    const [bibleVersions, setBibleVersions] = useState([]);
+    const [selectedVersion, setSelectedVersion] = useState('');
+    const [books, setBooks] = useState([]);
+    const [selectedBook, setSelectedBook] = useState('');
+    const [chapters, setChapters] = useState([]);
+    const [selectedChapter, setSelectedChapter] = useState('');
+    const [verses, setVerses] = useState([]);
+    const [selectedVerseLocal, setSelectedVerseLocal] = useState('');
+    const [error, setError] = useState(null);
+    const [verseContent, setVerseContent] = useState('');
+    const [verseReference, setVerseReference] = useState('');
+    const [languages, setLanguages] = useState([]);
+    const [selectedLanguage, setSelectedLanguage] = useState('');
+    const [languageMap, setLanguageMap] = useState({});
 
-  // Fetch Bible versions when the component mounts
-  useEffect(() => {
-    const fetchVersions = async () => {
-      try {
-        const versions = await getBibleVersions();
-        setBibleVersions(versions);
-      } catch (err) {
-        console.error("Error fetching Bible versions:", err);
-        setError(err); // Display error if versions fail to load
-      }
-    };
-
-    fetchVersions();
-  }, []);
-
-  // Fetch books when the version changes
-  useEffect(() => {
-    const fetchBooks = async () => {
-      if (selectedVersion) {
+    const fetchLanguages = async () => {
         try {
-          const fetchedBooks = await getBooks(selectedVersion);
-          setBooks(fetchedBooks);
-          setSelectedBook(''); // Reset book when version changes
-          setChapters([]); // Reset chapters when version changes
-          setSelectedChapter(''); // Reset chapter when version changes
-          setVerses([]); // Reset verses when version changes
-          setSelectedVerseLocal(''); // Reset verse when version changes
-          setVerseContent('');
-          setVerseReference('');
+            const response = await fetch('https://bolls.life/static/bolls/app/views/languages.json');
+            const data = await response.json();
+            const uniqueLanguages = Array.from(new Set(data.map(item => item.language)));
+            setLanguages(uniqueLanguages);
+
+            const newLanguageMap = {};
+            data.forEach(item => {
+                newLanguageMap[item.language.toLowerCase()] = item.language;
+            });
+            setLanguageMap(newLanguageMap);
+
+            const browserLanguage = navigator.language.split('-')[0];
+            if (Object.keys(newLanguageMap).find(item => item.toLowerCase().includes(browserLanguage))) {
+                const fullLanguageName = Object.values(newLanguageMap).find(lang =>
+                    lang.toLowerCase().includes(browserLanguage.toLowerCase())
+                );
+                setSelectedLanguage(fullLanguageName);
+            }
         } catch (err) {
-          console.error("Error fetching books:", err);
-          setError(err);
+            console.error("Error fetching languages:", err);
+            setError(err.toString());
         }
-      }
     };
 
-    fetchBooks();
-  }, [selectedVersion]);
+    useEffect(() => {
+        const fetchVersions = async () => {
+            try {
+                const versions = await getBibleVersions(selectedLanguage);
+                setBibleVersions(versions);
+                setSelectedVersion('');
+                setSelectedBook('');
+                setChapters([]);
+                setSelectedChapter('');
+                setVerses([]);
+                setSelectedVerseLocal('');
+                setVerseContent('');
+                setVerseReference('');
 
-  // Fetch chapters when the book changes
-  useEffect(() => {
-    const fetchChapters = async () => {
-      if (selectedVersion && selectedBook) {
+            } catch (err) {
+                console.error("Error fetching Bible versions:", err);
+                setError(err.toString());
+            }
+        };
+
+        fetchVersions();
+    }, [selectedLanguage]);
+
+    useEffect(() => {
+        const fetchBooks = async () => {
+            if (selectedVersion) {
+                try {
+                    const fetchedBooks = await getBooks(selectedVersion);
+                    setBooks(fetchedBooks);
+                    setSelectedBook('');
+                    setChapters([]);
+                    setSelectedChapter('');
+                    setVerses([]);
+                    setSelectedVerseLocal('');
+                    setVerseContent('');
+                    setVerseReference('');
+                } catch (err) {
+                    console.error("Error fetching books:", err);
+                    setError(err.toString());
+                }
+            }
+        };
+
+        fetchBooks();
+    }, [selectedVersion]);
+
+    useEffect(() => {
+        const fetchChapters = async () => {
+            if (selectedVersion && selectedBook) {
+                try {
+                    const fetchedChapters = await getChapters(selectedVersion, selectedBook);
+                    setChapters(fetchedChapters);
+                    setSelectedChapter('');
+                    setVerses([]);
+                    setSelectedVerseLocal('');
+                    setVerseContent('');
+                    setVerseReference('');
+                } catch (err) {
+                    console.error("Error fetching chapters:", err);
+                    setError(err.toString());
+                }
+            }
+        };
+
+        fetchChapters();
+    }, [selectedBook, selectedVersion]);
+
+    useEffect(() => {
+        const fetchVerses = async () => {
+            if (selectedVersion && selectedChapter) {
+                try {
+                    const fetchedVerses = await getVerses(selectedVersion, selectedChapter);
+                    setVerses(fetchedVerses);
+                    setSelectedVerseLocal('');
+                    setVerseContent('');
+                    setVerseReference('');
+                } catch (err) {
+                    console.error("Error fetching verses:", err);
+                    setError(err.toString());
+                }
+            }
+        };
+
+        fetchVerses();
+    }, [selectedChapter, selectedVersion]);
+
+    useEffect(() => {
+        fetchLanguages();
+    }, []);
+
+    const handleVersionChange = (event) => {
+        setSelectedVersion(event.target.value);
+    };
+
+    const handleBookChange = (event) => {
+        setSelectedBook(event.target.value);
+    };
+
+    const handleChapterChange = (event) => {
+        setSelectedChapter(event.target.value);
+    };
+
+    const handleVerseChange = (event) => {
+        setSelectedVerseLocal(event.target.value);
+    };
+
+    const handleLanguageChange = (event) => {
+        setSelectedLanguage(event.target.value);
+    };
+
+    const handleVerseSelection = async () => {
+        setError(null);
         try {
-          const fetchedChapters = await getChapters(selectedVersion, selectedBook);
-          setChapters(fetchedChapters);
-          setSelectedChapter(''); // Reset chapter when book changes
-          setVerses([]); // Reset verses when book changes
-          setSelectedVerseLocal(''); // Reset verse when book changes
-          setVerseContent('');
-          setVerseReference('');
+            if (!selectedVersion || !selectedBook || !selectedChapter || !selectedVerseLocal) {
+                setError("Please fill in all fields.");
+                return;
+            }
+
+            const verseRef = `${selectedBook}.${selectedChapter}.${selectedVerseLocal}`;
+
+            const data = await getSelectedVerse(selectedVersion, verseRef);
+            console.log(data)
+            if (data && data.content) {
+                setVerseContent(data.content);
+                setVerseReference(data.reference);
+                setSelectedVerse(data.content);
+            } else {
+                setError("Could not retrieve verse.");
+                setVerseContent('');
+                setVerseReference('');
+            }
         } catch (err) {
-          console.error("Error fetching chapters:", err);
-          setError(err);
+            console.error("Error fetching verse:", err);
+            setError(err.toString());
+            setVerseContent('');
+            setVerseReference('');
         }
-      }
     };
 
-    fetchChapters();
-  }, [selectedBook, selectedVersion]);
-
-  // Fetch verses when the chapter changes
-  useEffect(() => {
-    const fetchVerses = async () => {
-      if (selectedVersion && selectedChapter) {
-        try {
-          const fetchedVerses = await getVerses(selectedVersion, selectedChapter);
-          setVerses(fetchedVerses);
-          setSelectedVerseLocal(''); // Reset verse when chapter changes
-          setVerseContent('');
-          setVerseReference('');
-        } catch (err) {
-          console.error("Error fetching verses:", err);
-          setError(err);
-        }
-      }
-    };
-
-    fetchVerses();
-  }, [selectedChapter, selectedVersion]);
-
-  const handleVersionChange = (event) => {
-    setSelectedVersion(event.target.value);
-  };
-
-  const handleBookChange = (event) => {
-    setSelectedBook(event.target.value);
-  };
-
-  const handleChapterChange = (event) => {
-    setSelectedChapter(event.target.value);
-  };
-
-  const handleVerseChange = (event) => {
-    setSelectedVerseLocal(event.target.value);
-  };
-
-  const handleVerseSelection = async () => {
-    setError(null); // Clear any previous errors
-    try {
-      if (!selectedVersion || !selectedBook || !selectedChapter || !selectedVerse) {
-        setError("Please fill in all fields.");
-        return;
-      }
-
-      const verseRef = `${selectedVerse}`; // Corrected verseRef
-
-      const data = await getSelectedVerse(selectedVersion, verseRef);
-      console.log(data);
-
-      if (data && data.content) {
-        setVerseContent(data.content);
-        setVerseReference(data.reference);
-        setSelectedVerse(data.content); //update the state sent to MemorizationProgress
-      } else {
-        setError("Could not retrieve verse.");
-        setVerseContent(''); //clear values
-        setVerseReference('');
-      }
-    } catch (err) {
-      console.error("Error fetching verse:", err);
-      setError(err); // Display the error message from bibleApi.js
-      setVerseContent(''); //clear values
-      setVerseReference('');
-    }
-  };
-
-  return (
-    <div>
-      {/* Bible Version Dropdown */}
-      <label htmlFor="bibleVersion">Select Bible Version:</label>
-      <select id="bibleVersion" value={selectedVersion} onChange={handleVersionChange}>
-        <option value="">Select a Version</option> {/* Default option */}
-        {bibleVersions.map((version) => (
-          <option key={version.id} value={version.id}>
-            {version.name} ({version.abbreviation})
-          </option>
-        ))}
-      </select>
-      <br />
-
-      {/* Book Dropdown */}
-      <label htmlFor="book">Select Book:</label>
-      <select id="book" value={selectedBook} onChange={handleBookChange} disabled={!selectedVersion}>
-        <option value="">Select a Book</option> {/* Default option */}
-        {books.map((book) => (
-          <option key={book.id} value={book.id}>
-            {book.name}
-          </option>
-        ))}
-      </select>
-      <br />
-
-      {/* Chapter Dropdown */}
-      <label htmlFor="chapter">Select Chapter:</label>
-      <select id="chapter" value={selectedChapter} onChange={handleChapterChange} disabled={!selectedBook}>
-        <option value="">Select a Chapter</option> {/* Default option */}
-        {chapters.map((chapter) => (
-          <option key={chapter.id} value={chapter.id}> {/* Use chapter.id here */}
-            {chapter.number} {/* Display chapter.number here */}
-          </option>
-        ))}
-      </select>
-      <br />
-
-      {/* Verse Dropdown */}
-      <label htmlFor="verse">Select Verse:</label>
-      <select id="verse" value={selectedVerse} onChange={handleVerseChange} disabled={!selectedChapter}>
-        <option value="">Select a Verse</option> {/* Default option */}
-        {verses.map((verse) => (
-          <option key={verse.id} value={verse.id}>
-            {verse.id.split('.').pop()}
-          </option>
-        ))}
-      </select>
-      <br />
-
-      <button onClick={handleVerseSelection}>Select Verse</button>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      {/* Display Verse Content and Reference */}
-      {verseContent && (
+    return (
         <div>
-          <h3>{verseReference}</h3>
-          <div dangerouslySetInnerHTML={{ __html: verseContent }} />
+            <label htmlFor="language">Select Language:</label>
+            <select id="language" value={selectedLanguage} onChange={handleLanguageChange}>
+                <option value="">{selectedLanguage ? languageMap[selectedLanguage.toLowerCase()] : "Select a Language"}</option>
+                {languages.map((lang) => (
+                    <option key={lang} value={lang}>
+                        {lang}
+                    </option>
+                ))}
+            </select>
+            <br />
+            <label htmlFor="bibleVersion">Select Bible Version:</label>
+            <select id="bibleVersion" value={selectedVersion} onChange={handleVersionChange}>
+                <option value="">Select a Version</option>
+                {bibleVersions.map((version) => (
+                    <option key={version.id} value={version.id}>
+                        {version.name}
+                    </option>
+                ))}
+            </select>
+            <br />
+
+            <label htmlFor="book">Select Book:</label>
+            <select id="book" value={selectedBook} onChange={handleBookChange} disabled={!selectedVersion}>
+                <option value="">Select a Book</option>
+                {books.map((book) => (
+                    <option key={book.id} value={book.id}>
+                        {book.name}
+                    </option>
+                ))}
+            </select>
+            <br />
+
+            <label htmlFor="chapter">Select Chapter:</label>
+            <select id="chapter" value={selectedChapter} onChange={handleChapterChange} disabled={!selectedBook}>
+                <option value="">Select a Chapter</option>
+                {chapters.map((chapter) => (
+                    <option key={chapter.id} value={chapter.id}>
+                        {chapter.number}
+                    </option>
+                ))}
+            </select>
+            <br />
+
+            <label htmlFor="verse">Select Verse:</label>
+            <select id="verse" value={selectedVerseLocal} onChange={handleVerseChange} disabled={!selectedChapter}>
+                <option value="">Select a Verse</option>
+                {verses.map((verse) => (
+                    <option key={verse.id} value={verse.number}>
+                        {verse.number}
+                    </option>
+                ))}
+            </select>
+            <br />
+
+            <button onClick={handleVerseSelection}>Select Verse</button>
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+
+            {verseContent && (
+                <div>
+                    <h3>{verseReference}</h3>
+                    <div dangerouslySetInnerHTML={{ __html: verseContent }} />
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }
 
 export default VerseSelection;

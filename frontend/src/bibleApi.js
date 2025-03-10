@@ -1,194 +1,214 @@
-//my_key.js
-const API_KEY = `d49585e9969e0e8fe040546cb73d3759`; // Fill this in with your own API key from https://portal.api.bible/
+// bibleApi.js (New Version for bolls.life)
 
 /**
- * Gets Bible versions from API.Bible
- * @returns {Promise} containing list of Bible versions
+ * Gets a list of available translations.
+ * @param {string} language - The language to filter the translations by.
+ * @returns {Promise} containing a list of translations
  */
-function getBibleVersions() {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.withCredentials = false;
+function getBibleVersions(language) {
+    return new Promise((resolve, reject) => {
+        fetch('https://bolls.life/static/bolls/app/views/languages.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const translations = [];
+                let languageData = data;
+                if (language) {
+                    languageData = data.filter(item =>
+                        item.language.toLowerCase().includes(language.toLowerCase())
+                    );
+                }
 
-    xhr.addEventListener(`readystatechange`, function () {
-      if (this.readyState === this.DONE) {
-        if (this.status >= 200 && this.status < 300) {
-          try {
-            const response = JSON.parse(this.responseText);
-            const versions = response.data.map((data) => {
-              return {
-                name: data.name,
-                id: data.id,
-                abbreviation: data.abbreviation,
-                description: data.description,
-                language: data.language.name
-              };
+                languageData.forEach(langData => {
+                    langData.translations.forEach(translation => {
+                        translations.push({
+                            name: translation.full_name,
+                            id: translation.short_name,
+                            abbreviation: translation.short_name,
+                            description: translation.info || '',
+                            commentaries: translation.commentaries,
+                            updated: translation.updated,
+                            dir: translation.dir || '',
+                            language: langData.language // Add the language
+                        });
+                    });
+                });
+                resolve(translations);
+            })
+            .catch(error => {
+                reject(error);
             });
-            resolve(versions);
-          } catch (error) {
-            reject('Error parsing the response');
-          }
-        } else {
-          reject(`Request failed with status: ${this.status}`); // Reject on non-success status
-        }
-      }
     });
-
-    xhr.open(`GET`, `/bibles`);
-    xhr.setRequestHeader(`api-key`, API_KEY);
-
-    xhr.onerror = () => reject(xhr.statusText);
-
-    xhr.send();
-  });
 }
 
 /**
- * Gets books of the Bible from API.Bible
- * @param {string} bibleVersionID to get books from
- * @returns {Promise} containing list of books of the Bible
+ * Gets books of the Bible for a specific translation.
+ * @param {string} translationID - The short name of the translation (e.g., 'YLT').
+ * @returns {Promise} containing a list of books
  */
-function getBooks(bibleVersionID) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.withCredentials = false;
-
-    xhr.addEventListener(`readystatechange`, function () {
-      if (this.readyState === this.DONE) {
-        if (this.status >= 200 && this.status < 300) {
-          try {
-            const response = JSON.parse(this.responseText);
-            const books = response.data.map(({ name, id }) => { return { name, id }; });
-
-            resolve(books);
-          } catch (error) {
-            reject('Error parsing the response');
-          }
-        } else {
-          reject(`Request failed with status: ${this.status}`); // Reject on non-success status
-        }
-      }
+function getBooks(translationID) {
+    return new Promise((resolve, reject) => {
+        fetch(`https://bolls.life/get-books/${translationID}/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const books = data.map(book => ({
+                    name: book.name,
+                    id: book.bookid,
+                    chapters: book.chapters,
+                    chronorder: book.chronorder
+                }));
+                resolve(books);
+            })
+            .catch(error => {
+                reject(error);
+            });
     });
-
-    xhr.open(`GET`, `/bibles/${bibleVersionID}/books`);
-    xhr.setRequestHeader(`api-key`, API_KEY);
-
-    xhr.onerror = () => reject(xhr.statusText);
-
-    xhr.send();
-  });
 }
 
 /**
- * Gets chapters from API.Bible
- * @param {string} bibleVersionID to get chapters from
- * @param {string} bibleBookID to get chapters from
- * @returns {Promise} containing list of chapters from selected book
+ * Gets chapters of a specific book for a specific translation.
+ * @param {string} translationID - The short name of the translation.
+ * @param {string} bookID - The ID of the book.
+ * @returns {Promise} containing a list of chapters
  */
-function getChapters(bibleVersionID, bibleBookID) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.withCredentials = false;
-
-    xhr.addEventListener(`readystatechange`, function () {
-      if (this.readyState === this.DONE) {
-        if (this.status >= 200 && this.status < 300) {
-          try {
-            const response = JSON.parse(this.responseText);
-            const chapters = response.data.map(({ number, id }) => { return { number, id }; });
-
-            resolve(chapters);
-          } catch (error) {
-            reject('Error parsing the response');
-          }
-        } else {
-          reject(`Request failed with status: ${this.status}`); // Reject on non-success status
-        }
-      }
+function getChapters(translationID, bookID) {
+    return new Promise((resolve, reject) => {
+        // The bolls.life API provides the number of chapters with the books
+        // so we can construct the chapters array directly here.
+        getBooks(translationID)
+            .then(books => {
+                const book = books.find(b => b.id === parseInt(bookID));
+                if (book) {
+                    const chapters = Array.from({ length: book.chapters }, (_, i) => ({
+                        number: i + 1,
+                        id: `${bookID}.${i + 1}`
+                    }));
+                    resolve(chapters);
+                } else {
+                    reject(`Book with ID ${bookID} not found.`);
+                }
+            })
+            .catch(error => {
+                reject(error);
+            });
     });
-
-    xhr.open(`GET`, `/bibles/${bibleVersionID}/books/${bibleBookID}/chapters`);
-    xhr.setRequestHeader(`api-key`, API_KEY);
-
-    xhr.onerror = () => reject(xhr.statusText);
-
-    xhr.send();
-  });
 }
 
 /**
- * Gets verses from API.Bible
- * @param {string} bibleVersionID to get verses from
- * @param {string} bibleChapterID to get verses from
- * @returns {Promise} containing list of verses from selected book
+ * Gets verses of a specific chapter for a specific translation.
+ * @param {string} translationID - The short name of the translation.
+ * @param {string} chapterID - The ID of the chapter (e.g., '1.1' for book 1, chapter 1).
+ * @returns {Promise} containing a list of verses
  */
-function getVerses(bibleVersionID, bibleChapterID) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.withCredentials = false;
-
-    xhr.addEventListener(`readystatechange`, function () {
-      if (this.readyState === this.DONE) {
-        if (this.status >= 200 && this.status < 300) {
-          try {
-            const response = JSON.parse(this.responseText);
-            const verses = response.data.map(({ id }) => { return { id }; });
-
-            resolve(verses);
-          } catch (error) {
-            reject('Error parsing the response');
-          }
-        } else {
-          reject(`Request failed with status: ${this.status}`); // Reject on non-success status
-        }
-      }
+function getVerses(translationID, chapterID) {
+    return new Promise((resolve, reject) => {
+        const [bookID, chapterNumber] = chapterID.split('.');
+        const url = `https://bolls.life/get-text/${translationID}/${bookID}/${chapterNumber}/`;
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const verses = data.map(verse => ({
+                    id: `${chapterID}.${verse.verse}`,
+                    number: verse.verse,
+                }));
+                resolve(verses);
+            })
+            .catch(error => {
+                reject(error);
+            });
     });
-
-    xhr.open(`GET`, `/bibles/${bibleVersionID}/chapters/${bibleChapterID}/verses`);
-    xhr.setRequestHeader(`api-key`, API_KEY);
-
-    xhr.onerror = () => reject(xhr.statusText);
-
-    xhr.send();
-  });
 }
 
 /**
- * Gets selected verse from API.Bible
- * @param {string} bibleVersionID to get verse from
- * @param {string} bibleVerseID of selected verse
- * @returns {Promise} containing selected verse
+ * Gets a specific verse.
+ * @param {string} translationID - The short name of the translation.
+ * @param {string} verseID - The ID of the verse (e.g., '1.1.1' for book 1, chapter 1, verse 1).
+ * @returns {Promise} containing the verse content
  */
-function getSelectedVerse(bibleVersionID, bibleVerseID) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.withCredentials = false;
+async function getSelectedVerse(translationID, verseID) {
+    return new Promise(async (resolve, reject) => {
+        const [bookID, chapterNumber, verseNumber] = verseID.split('.');
+        const bookNumber = await getBookNumber(translationID, bookID)
+        const bookName = await getBookName(translationID, bookID)
+       const url = `https://bolls.life/get-verse/${translationID}/${bookNumber}/${chapterNumber}/${verseNumber}/`;
 
-    xhr.addEventListener(`readystatechange`, function () {
-      if (this.readyState === this.DONE) {
-        if (this.status >= 200 && this.status < 300) {
-          try {
-            const response = JSON.parse(this.responseText);
-            const { content, reference } = response.data;
-            const verse = { content, reference };
-
-            resolve(verse);
-          } catch (error) {
-            reject('Error parsing the response');
-          }
-        } else {
-          reject(`Request failed with status: ${this.status}`); // Reject on non-success status
-        }
-      }
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                    resolve({
+                        content: data.text, // Assuming 'text' contains the verse content
+                        reference: `${bookName} ${chapterNumber}:${data.verse}` //remove the version, add the book name
+                    });
+            })
+            .catch(error => {
+                reject(error);
+            });
     });
-
-    xhr.open(`GET`, `/bibles/${bibleVersionID}/verses/${bibleVerseID}?include-chapter-numbers=false&include-verse-numbers=false`);
-    xhr.setRequestHeader(`api-key`, API_KEY);
-
-    xhr.onerror = () => reject(xhr.statusText);
-
-    xhr.send();
-  });
 }
 
+/**
+* Gets the book number from a specific translation.
+* @param {string} translationID - The short name of the translation.
+* @param {string} bookID - The ID of the book.
+* @returns {Promise} containing the book number.
+*/
+function getBookNumber(translationID, bookID) {
+    return new Promise((resolve, reject) => {
+        getBooks(translationID)
+        .then(books => {
+            const book = books.find(b => b.id === parseInt(bookID));
+            if (book) {
+                 resolve(book.chronorder);
+            }
+            else{
+                 reject(`Book with ID ${bookID} not found.`);
+            }
+        })
+        .catch(error => {
+            reject(error);
+        });
+    });
+}
+/**
+ * Gets the book name from a specific translation.
+ * @param {string} translationID - The short name of the translation.
+ * @param {string} bookID - The ID of the book.
+ * @returns {Promise} containing the book number.
+ */
+function getBookName(translationID, bookID) {
+    return new Promise((resolve, reject) => {
+        getBooks(translationID)
+        .then(books => {
+            const book = books.find(b => b.id === parseInt(bookID));
+            if (book) {
+                 resolve(book.name);
+            }
+            else{
+                 reject(`Book with ID ${bookID} not found.`);
+            }
+        })
+        .catch(error => {
+            reject(error);
+        });
+    });
+}
 export { getBibleVersions, getBooks, getChapters, getVerses, getSelectedVerse };
