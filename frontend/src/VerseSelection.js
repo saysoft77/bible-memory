@@ -11,6 +11,8 @@ function VerseSelection({ setSelectedVerse }) {
   const [verses, setVerses] = useState([]);
   const [selectedVerse, setSelectedVerseLocal] = useState(''); //local state for verse
   const [error, setError] = useState(null);
+  const [verseContent, setVerseContent] = useState('');
+  const [verseReference, setVerseReference] = useState('');
 
   // Fetch Bible versions when the component mounts
   useEffect(() => {
@@ -39,6 +41,8 @@ function VerseSelection({ setSelectedVerse }) {
           setSelectedChapter(''); // Reset chapter when version changes
           setVerses([]); // Reset verses when version changes
           setSelectedVerseLocal(''); // Reset verse when version changes
+          setVerseContent('');
+          setVerseReference('');
         } catch (err) {
           console.error("Error fetching books:", err);
           setError(err);
@@ -59,6 +63,8 @@ function VerseSelection({ setSelectedVerse }) {
           setSelectedChapter(''); // Reset chapter when book changes
           setVerses([]); // Reset verses when book changes
           setSelectedVerseLocal(''); // Reset verse when book changes
+          setVerseContent('');
+          setVerseReference('');
         } catch (err) {
           console.error("Error fetching chapters:", err);
           setError(err);
@@ -77,6 +83,8 @@ function VerseSelection({ setSelectedVerse }) {
           const fetchedVerses = await getVerses(selectedVersion, selectedChapter);
           setVerses(fetchedVerses);
           setSelectedVerseLocal(''); // Reset verse when chapter changes
+          setVerseContent('');
+          setVerseReference('');
         } catch (err) {
           console.error("Error fetching verses:", err);
           setError(err);
@@ -110,21 +118,26 @@ function VerseSelection({ setSelectedVerse }) {
         setError("Please fill in all fields.");
         return;
       }
-     // const verseRef = `${selectedBook}.${selectedChapter}.${selectedVerse}`; // Corrected verseRef
+
       const verseRef = `${selectedVerse}`; // Corrected verseRef
 
       const data = await getSelectedVerse(selectedVersion, verseRef);
       console.log(data);
 
       if (data && data.content) {
-        const verseText = data.content;
-        setSelectedVerse(data.content);
+        setVerseContent(data.content);
+        setVerseReference(data.reference);
+        setSelectedVerse(data.content); //update the state sent to MemorizationProgress
       } else {
         setError("Could not retrieve verse.");
+        setVerseContent(''); //clear values
+        setVerseReference('');
       }
     } catch (err) {
       console.error("Error fetching verse:", err);
       setError(err); // Display the error message from bibleApi.js
+      setVerseContent(''); //clear values
+      setVerseReference('');
     }
   };
 
@@ -180,6 +193,14 @@ function VerseSelection({ setSelectedVerse }) {
 
       <button onClick={handleVerseSelection}>Select Verse</button>
       {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {/* Display Verse Content and Reference */}
+      {verseContent && (
+        <div>
+          <h3>{verseReference}</h3>
+          <div dangerouslySetInnerHTML={{ __html: verseContent }} />
+        </div>
+      )}
     </div>
   );
 }
