@@ -7,7 +7,7 @@
  */
 function getBibleVersions(language) {
     return new Promise((resolve, reject) => {
-        fetch('https://bolls.life/static/bolls/app/views/languages.json')
+        fetch('http://localhost:5000/api/static/bolls/app/views/languages.json') // Updated to match line 22 of VerseSelection.js
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Network response was not ok: ${response.status}`);
@@ -52,7 +52,7 @@ function getBibleVersions(language) {
  */
 function getBooks(translationID) {
     return new Promise((resolve, reject) => {
-        fetch(`https://bolls.life/get-books/${translationID}/`)
+        fetch(`http://localhost:5000/api/get-books/${translationID}/`) // Updated to match line 22 of VerseSelection.js
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Network response was not ok: ${response.status}`);
@@ -82,8 +82,6 @@ function getBooks(translationID) {
  */
 function getChapters(translationID, bookID) {
     return new Promise((resolve, reject) => {
-        // The bolls.life API provides the number of chapters with the books
-        // so we can construct the chapters array directly here.
         getBooks(translationID)
             .then(books => {
                 const book = books.find(b => b.id === parseInt(bookID));
@@ -112,7 +110,7 @@ function getChapters(translationID, bookID) {
 function getVerses(translationID, chapterID) {
     return new Promise((resolve, reject) => {
         const [bookID, chapterNumber] = chapterID.split('.');
-        const url = `https://bolls.life/get-text/${translationID}/${bookID}/${chapterNumber}/`;
+        const url = `http://localhost:5000/api/get-text/${translationID}/${bookID}/${chapterNumber}/`; // Updated to match line 22 of VerseSelection.js
         fetch(url)
             .then(response => {
                 if (!response.ok) {
@@ -142,9 +140,9 @@ function getVerses(translationID, chapterID) {
 async function getSelectedVerse(translationID, verseID) {
     return new Promise(async (resolve, reject) => {
         const [bookID, chapterNumber, verseNumber] = verseID.split('.');
-        const bookNumber = await getBookNumber(translationID, bookID)
-        const bookName = await getBookName(translationID, bookID)
-       const url = `https://bolls.life/get-verse/${translationID}/${bookNumber}/${chapterNumber}/${verseNumber}/`;
+        const bookNumber = await getBookNumber(translationID, bookID);
+        const bookName = await getBookName(translationID, bookID);
+        const url = `http://localhost:5000/api/get-verse/${translationID}/${bookNumber}/${chapterNumber}/${verseNumber}/`; // Updated to match line 22 of VerseSelection.js
 
         fetch(url)
             .then(response => {
@@ -154,10 +152,10 @@ async function getSelectedVerse(translationID, verseID) {
                 return response.json();
             })
             .then(data => {
-                    resolve({
-                        content: data.text, // Assuming 'text' contains the verse content
-                        reference: `${bookName} ${chapterNumber}:${data.verse}` //remove the version, add the book name
-                    });
+                resolve({
+                    content: data.text, // Assuming 'text' contains the verse content
+                    reference: `${bookName} ${chapterNumber}:${data.verse}` // Remove the version, add the book name
+                });
             })
             .catch(error => {
                 reject(error);

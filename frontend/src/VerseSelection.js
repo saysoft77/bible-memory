@@ -19,24 +19,13 @@ function VerseSelection({ setSelectedVerse }) {
 
     const fetchLanguages = async () => {
         try {
-            const response = await fetch('https://bolls.life/static/bolls/app/views/languages.json');
-            const data = await response.json();
-            const uniqueLanguages = Array.from(new Set(data.map(item => item.language)));
-            setLanguages(uniqueLanguages);
-
-            const newLanguageMap = {};
-            data.forEach(item => {
-                newLanguageMap[item.language.toLowerCase()] = item.language;
-            });
-            setLanguageMap(newLanguageMap);
-
-            const browserLanguage = navigator.language.split('-')[0];
-            if (Object.keys(newLanguageMap).find(item => item.toLowerCase().includes(browserLanguage))) {
-                const fullLanguageName = Object.values(newLanguageMap).find(lang =>
-                    lang.toLowerCase().includes(browserLanguage.toLowerCase())
-                );
-                setSelectedLanguage(fullLanguageName);
+            const response = await fetch('http://localhost:5000/api/static/bolls/app/views/languages.json'); // Use the proxy server
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.status}`);
             }
+            const data = await response.json();
+            console.log('Languages Data:', data);
+            setLanguages(data.map(item => item.language));
         } catch (err) {
             console.error("Error fetching languages:", err);
             setError(err.toString());
@@ -44,19 +33,27 @@ function VerseSelection({ setSelectedVerse }) {
     };
 
     useEffect(() => {
+        fetchLanguages();
+    }, []);
+
+    useEffect(() => {
         const fetchVersions = async () => {
+            if (!selectedLanguage) {
+                setBibleVersions([]); // Clear versions if no language is selected
+                return;
+            }
+
             try {
                 const versions = await getBibleVersions(selectedLanguage);
                 setBibleVersions(versions);
-                setSelectedVersion('');
-                setSelectedBook('');
+                setSelectedVersion(''); // Reset the selected version
+                setSelectedBook(''); // Reset the book dropdown
                 setChapters([]);
                 setSelectedChapter('');
                 setVerses([]);
                 setSelectedVerseLocal('');
                 setVerseContent('');
                 setVerseReference('');
-
             } catch (err) {
                 console.error("Error fetching Bible versions:", err);
                 setError(err.toString());
@@ -129,10 +126,6 @@ function VerseSelection({ setSelectedVerse }) {
         fetchVerses();
     }, [selectedChapter, selectedVersion]);
 
-    useEffect(() => {
-        fetchLanguages();
-    }, []);
-
     const handleVersionChange = (event) => {
         setSelectedVersion(event.target.value);
     };
@@ -164,7 +157,7 @@ function VerseSelection({ setSelectedVerse }) {
             const verseRef = `${selectedBook}.${selectedChapter}.${selectedVerseLocal}`;
 
             const data = await getSelectedVerse(selectedVersion, verseRef);
-            console.log(data)
+            console.log(data);
             if (data && data.content) {
                 setVerseContent(data.content);
                 setVerseReference(data.reference);
@@ -186,7 +179,7 @@ function VerseSelection({ setSelectedVerse }) {
         <div>
             <label htmlFor="language">Select Language:</label>
             <select id="language" value={selectedLanguage} onChange={handleLanguageChange}>
-                <option value="">{selectedLanguage ? languageMap[selectedLanguage.toLowerCase()] : "Select a Language"}</option>
+                <option value="">Select a Language</option>
                 {languages.map((lang) => (
                     <option key={lang} value={lang}>
                         {lang}
@@ -195,7 +188,7 @@ function VerseSelection({ setSelectedVerse }) {
             </select>
             <br />
             <label htmlFor="bibleVersion">Select Bible Version:</label>
-            <select id="bibleVersion" value={selectedVersion} onChange={handleVersionChange}>
+            <select id="bibleVersion" value={selectedVersion} onChange={handleVersionChange} disabled={!selectedLanguage}>
                 <option value="">Select a Version</option>
                 {bibleVersions.map((version) => (
                     <option key={version.id} value={version.id}>

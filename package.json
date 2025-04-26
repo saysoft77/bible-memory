@@ -1,6 +1,9 @@
-
 {
   "scripts": {
     "start": "concurrently \"npm start --prefix frontend\" \"npm start --prefix backend\""
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "http-proxy-middleware": "^3.0.5"
   }
 }
